@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F1B3C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Reminders">
+<title>My Reminders</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@media(max-width:600px){
+  .toolbar{padding:8px 12px;gap:6px}
+  .list-panel{padding:10px 12px}
+  .hdr{padding:0 12px;height:48px}
+  .hdr-title{font-size:13px}
+  .btn{padding:6px 10px;font-size:11px}
+  .filter-sel{font-size:11px;padding:5px 6px}
+  .search-box{width:100%;margin-left:0}
+  .toolbar{flex-wrap:wrap}
+  .card{padding:10px 12px}
+  .card-title{font-size:12px}
+  .card-actions{gap:4px}
+  .act-btn{padding:4px 8px;font-size:10px}
+  .modal{padding:16px;width:95vw}
+  .form-row{grid-template-columns:1fr}
+  .date-row{flex-wrap:wrap;gap:4px}
+  .date-sel.month{width:100%}
+  .tab-btn{padding:5px 10px;font-size:11px}
+}
+:root{
+  --navy:#0F1B3C;--blue:#2D5BE3;--blue-lt:#EEF3FF;
+  --red:#DC2626;--red-lt:#FEF2F2;
+  --green:#059669;--green-lt:#ECFDF5;
+  --orange:#D97706;--orange-lt:#FFFBEB;
+  --gray:#6B7280;--border:#E5E7EB;--bg:#F7F8FC;--white:#fff;--text:#111827;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
+.hdr{background:var(--navy);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.hdr-title{color:#fff;font-size:15px;font-weight:700}
+.badge-count{background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:22px;text-align:center}
+.tab-bar{display:flex;gap:4px}
+.tab-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);transition:all .15s}
+.tab-btn.active{background:#fff;color:var(--navy)}
+.sync-status{font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:5px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#6B7280}
+.sync-dot.ok{background:#059669}.sync-dot.err{background:#DC2626}.sync-dot.ing{background:#D97706}
+.toolbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:flex;align-items:center;gap:6px}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#2449c0}
+.btn-secondary{background:var(--blue-lt);color:var(--blue);border:1px solid #BFDBFE}.btn-secondary:hover{background:var(--blue);color:#fff}
+.btn-paste{background:var(--orange-lt);color:var(--orange);border:1px solid #FDE68A}.btn-paste:hover{background:var(--orange);color:#fff}
+.search-box{margin-left:auto;background:#F9FAFB;border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:12px;width:200px;outline:none;font-family:inherit}
+.search-box:focus{border-color:var(--blue)}
+.filter-sel{background:#F9FAFB;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;outline:none;font-family:inherit;cursor:pointer}
+.main{flex:1;overflow:hidden;display:flex}
+.list-panel{width:100%;overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:8px}
+.card{background:#fff;border-radius:10px;border:1px solid var(--border);padding:14px 16px;transition:all .15s;position:relative;display:flex;gap:14px;align-items:flex-start}
+.card:hover{border-color:var(--blue);box-shadow:0 2px 12px rgba(45,91,227,.1)}
+.card.urgent{border-left:4px solid var(--red)}
+.card.normal{border-left:4px solid var(--blue)}
+.card.low{border-left:4px solid var(--gray)}
+.card-body{flex:1;min-width:0}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.card-title{font-size:13px;font-weight:700;color:var(--text)}
+.card-date{font-size:11px;color:var(--gray);margin-left:auto;white-space:nowrap}
+.card-text{font-size:12px;color:var(--gray);line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:120px;overflow:hidden;position:relative}
+.card-text.expanded{max-height:none}
+.expand-btn{font-size:11px;color:var(--blue);cursor:pointer;margin-top:4px;display:inline-block}
+.card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.act-btn{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.act-done{background:var(--green-lt);color:var(--green)}.act-done:hover{background:var(--green);color:#fff}
+.act-archive{background:#F3F4F6;color:var(--gray)}.act-archive:hover{background:var(--gray);color:#fff}
+.act-delete{background:var(--red-lt);color:var(--red)}.act-delete:hover{background:var(--red);color:#fff}
+.act-edit{background:var(--blue-lt);color:var(--blue)}.act-edit:hover{background:var(--blue);color:#fff}
+.priority-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.dot-urgent{background:var(--red)}.dot-normal{background:var(--blue)}.dot-low{background:var(--gray)}
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.pill-urgent{background:var(--red-lt);color:var(--red)}
+.pill-normal{background:var(--blue-lt);color:var(--blue)}
+.pill-low{background:#F3F4F6;color:var(--gray)}
+.pill-done{background:var(--green-lt);color:var(--green)}
+.due-soon{color:var(--orange);font-weight:700}
+.overdue{color:var(--red);font-weight:700}
+.empty{text-align:center;padding:60px 20px;color:var(--gray)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-text{font-size:14px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:540px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block}
+.form-input,.form-textarea,.form-select{width:100%;background:#F9FAFB;border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none;color:var(--text)}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--blue);background:#fff}
+.form-textarea{min-height:130px;resize:vertical;line-height:1.6}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.btn-cancel{background:#F3F4F6;color:var(--gray);padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none}
+.btn-save{background:var(--blue);color:#fff;padding:8px 20px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none}
+.btn-save:hover{background:#2449c0}
+.paste-hint{font-size:11px;color:var(--gray);margin-top:5px}
+.path-bar{background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;padding:8px 12px;font-size:11px;color:var(--orange);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.date-row{display:flex;gap:6px;align-items:center}
+.date-sel{background:#F9FAFB;border:1px solid var(--border);border-radius:7px;padding:8px 8px;font-size:13px;font-family:inherit;outline:none;color:var(--text);cursor:pointer}
+.date-sel:focus{border-color:var(--blue);background:#fff}
+.date-sel.day{width:70px}.date-sel.month{width:110px}.date-sel.year{width:85px}.date-sel.time{width:90px}
+.img-preview{max-width:100%;max-height:180px;border-radius:8px;margin-top:8px;border:1px solid var(--border)}
+.img-upload-btn{background:#F9FAFB;border:2px dashed var(--border);border-radius:8px;padding:14px;text-align:center;cursor:pointer;font-size:12px;color:var(--gray);transition:all .15s}
+.img-upload-btn:hover{border-color:var(--blue);color:var(--blue)}
+.img-upload-btn.drag-over{border-color:var(--blue);background:var(--blue-lt)}
+.img-actions{display:flex;gap:8px;margin-top:6px;align-items:center}
+.img-remove{font-size:11px;color:var(--red);cursor:pointer;font-weight:600}
+.card-img{max-width:100%;max-height:150px;border-radius:6px;margin-top:8px;border:1px solid var(--border);cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <span style="font-size:20px">📬</span>
+    <span class="hdr-title">My Reminders</span>
+    <span class="badge-count" id="activeCount">0</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="sync-status"><div class="sync-dot" id="syncDot"></div><span id="syncTxt">—</span></div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('active',this)">📥 Active</button>
+      <button class="tab-btn" onclick="switchTab('archive',this)">📦 Archive</button>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn btn-primary" onclick="openModal()">＋ Add Reminder</button>
+  <button class="btn btn-paste" onclick="openPaste()">📋 Paste Email</button>
+  <select class="filter-sel" id="priorityFilter" onchange="render()">
+    <option value="">All Priorities</option>
+    <option value="urgent">🔴 Urgent</option>
+    <option value="normal">🔵 Normal</option>
+    <option value="low">⚪ Low</option>
+  </select>
+  <select class="filter-sel" id="sortFilter" onchange="render()">
+    <option value="date_asc">Date ↑ (oldest first)</option>
+    <option value="date_desc">Date ↓ (newest first)</option>
+    <option value="priority">Priority</option>
+    <option value="added">Recently Added</option>
+  </select>
+  <input class="search-box" id="searchBox" placeholder="🔍  Search..." oninput="render()">
+</div>
+
+<div class="main">
+  <div class="list-panel" id="listPanel"></div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="modalOverlay" onclick="closeModalOut(event)">
+  <div class="modal">
+    <div class="modal-title"><span>📝</span><span id="modalTitleText">New Reminder</span></div>
+    <div class="form-group">
+      <label class="form-label">Title *</label>
+      <input class="form-input" id="fTitle" placeholder="e.g. Reply to Vibe about phthalate test">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Details / Notes</label>
+      <textarea class="form-textarea" id="fText" placeholder="Write notes here..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Due Date</label>
+        <div class="date-row">
+          <select class="date-sel day" id="fDay"><option value="">Day</option></select>
+          <select class="date-sel month" id="fMonth">
+            <option value="">Month</option>
+            <option value="01">January</option><option value="02">February</option>
+            <option value="03">March</option><option value="04">April</option>
+            <option value="05">May</option><option value="06">June</option>
+            <option value="07">July</option><option value="08">August</option>
+            <option value="09">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+          <select class="date-sel year" id="fYear"><option value="">Year</option></select>
+          <select class="date-sel time" id="fTime">
+            <option value="">Time (opt.)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-select" id="fPriority">
+          <option value="urgent">🔴 Urgent</option>
+          <option value="normal" selected>🔵 Normal</option>
+          <option value="low">⚪ Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">From (sender / source)</label>
+      <input class="form-input" id="fFrom" placeholder="e.g. Vibe @ Konges Sløjd">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Image (optional)</label>
+      <div class="img-upload-btn" id="imgDropZone" onclick="document.getElementById('fImgInput').click()">
+        📎 Click to attach — or paste screenshot (Ctrl+V)
+      </div>
+      <input type="file" id="fImgInput" accept="image/*" style="display:none" onchange="previewImg(this,'fImgPreview')">
+      <div id="fImgPreviewWrap" style="display:none">
+        <img id="fImgPreview" class="img-preview">
+        <div class="img-actions"><span class="img-remove" onclick="removeImg()">✕ Remove image</span></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Paste Email Modal -->
+<div class="overlay" id="pasteOverlay" onclick="closePasteOut(event)">
+  <div class="modal">
+    <div class="modal-title"><span>📋</span><span>Paste Email</span></div>
+    <div class="path-bar">💡 Copy the email content (Ctrl+A → Ctrl+C), then paste here (Ctrl+V)</div>
+    <div class="form-group">
+      <label class="form-label">Paste Email Content Here</label>
+      <textarea class="form-textarea" id="pasteText" placeholder="Paste the full email here (Ctrl+V)..." style="min-height:160px"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Title (auto-filled, edit if needed)</label>
+      <input class="form-input" id="pasteTitle" placeholder="Will be filled automatically...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">From</label>
+        <input class="form-input" id="pasteFrom" placeholder="Sender name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-select" id="pastePriority">
+          <option value="urgent">🔴 Urgent</option>
+          <option value="normal" selected>🔵 Normal</option>
+          <option value="low">⚪ Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Due Date</label>
+      <div class="date-row">
+        <select class="date-sel day" id="pasteDay"><option value="">Day</option></select>
+        <select class="date-sel month" id="pasteMonth">
+          <option value="">Month</option>
+          <option value="01">January</option><option value="02">February</option>
+          <option value="03">March</option><option value="04">April</option>
+          <option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option>
+          <option value="09">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+        <select class="date-sel year" id="pasteYear"><option value="">Year</option></select>
+        <select class="date-sel time" id="pasteTime">
+          <option value="">Time (opt.)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePaste()">Cancel</button>
+      <button class="btn-save" onclick="savePaste()">Save Reminder</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config — Google Drive path ───────────────────────────────────────────────
+const DATA_FILE = 'G:\\My Drive\\MyInbox-App\\inbox_data.json';
+
+let items = [];
+let currentTab = 'active';
+let editId = null;
+
+// ── JSONBin Cloud Storage ────────────────────────────────────────────────────
+const JSONBIN_ID = '69dc47f1aaba882197f14505';
+const JSONBIN_KEY = '$2a$10$QoCj0kNxaQhkzkQr.dc6oOItBX42llek6MnXXzbVOnRN9RcCpC3R6';
+const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/' + JSONBIN_ID;
+
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = msg;
+}
+
+async function loadData() {
+  setSyncStatus('ing', 'Loading...');
+  try {
+    const res = await fetch(JSONBIN_URL + '/latest', {
+      headers: { 'X-Master-Key': JSONBIN_KEY }
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    items = data.record.items || data.record || [];
+    localStorage.setItem('myreminders_v1', JSON.stringify(items));
+    setSyncStatus('ok', 'Synced ✓');
+  } catch {
+    try { items = JSON.parse(localStorage.getItem('myreminders_v1')) || []; } catch { items = []; }
+    setSyncStatus('err', 'Offline — local data');
+  }
+  render();
+}
+
+async function saveData() {
+  localStorage.setItem('myreminders_v1', JSON.stringify(items));
+  setSyncStatus('ing', 'Saving...');
+  try {
+    const res = await fetch(JSONBIN_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+      body: JSON.stringify({ items })
+    });
+    if (!res.ok) throw new Error();
+    setSyncStatus('ok', 'Synced ✓');
+  } catch {
+    setSyncStatus('err', 'Saved locally only');
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function today() { return new Date().toISOString().slice(0,10); }
+function daysDiff(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr), t = new Date(today());
+  return Math.round((d - t) / 86400000);
+}
+function fmtDate(dateStr, timeStr) {
+  if (!dateStr) return '—';
+  const diff = daysDiff(dateStr);
+  const d = new Date(dateStr);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const label = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + (timeStr ? ' ⏰ ' + timeStr : '');
+  if (diff === null) return label;
+  if (diff < 0) return `<span class="overdue">⚠ Overdue ${Math.abs(diff)}d — ${label}</span>`;
+  if (diff === 0) return `<span class="due-soon">📌 Today — ${label}</span>`;
+  if (diff <= 3) return `<span class="due-soon">⏰ ${diff}d left — ${label}</span>`;
+  return label;
+}
+function priorityOrder(p) { return p==='urgent'?0:p==='normal'?1:2; }
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const search = document.getElementById('searchBox').value.toLowerCase();
+  const pFilter = document.getElementById('priorityFilter').value;
+  const sort = document.getElementById('sortFilter').value;
+
+  let filtered = items.filter(i => {
+    if (currentTab === 'active' && i.archived) return false;
+    if (currentTab === 'archive' && !i.archived) return false;
+    if (pFilter && i.priority !== pFilter) return false;
+    if (search && !i.title.toLowerCase().includes(search) &&
+        !(i.text||'').toLowerCase().includes(search) &&
+        !(i.from||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  filtered.sort((a,b) => {
+    if (sort === 'date_asc') return (a.dueDate||'9999') > (b.dueDate||'9999') ? 1 : -1;
+    if (sort === 'date_desc') return (a.dueDate||'0000') < (b.dueDate||'0000') ? 1 : -1;
+    if (sort === 'priority') return priorityOrder(a.priority) - priorityOrder(b.priority);
+    return b.addedAt - a.addedAt;
+  });
+
+  const panel = document.getElementById('listPanel');
+  document.getElementById('activeCount').textContent = items.filter(i => !i.archived).length;
+
+  if (filtered.length === 0) {
+    panel.innerHTML = `<div class="empty"><div class="empty-icon">${currentTab==='active'?'📭':'📦'}</div><div class="empty-text">${currentTab==='active'?'No reminders. Click + Add Reminder to start.':'Archive is empty.'}</div></div>`;
+    return;
+  }
+
+  panel.innerHTML = filtered.map(item => {
+    const pClass = item.priority;
+    const pLabel = item.priority === 'urgent' ? 'Urgent' : item.priority === 'normal' ? 'Normal' : 'Low';
+    const pillClass = `pill-${item.done ? 'done' : pClass}`;
+    const pillText = item.done ? '✓ Done' : pLabel;
+    const dateHtml = fmtDate(item.dueDate, item.dueTime);
+    const fromHtml = item.from ? `<div style="font-size:11px;color:var(--gray);margin-bottom:4px">From: <b>${item.from}</b></div>` : '';
+    const textHtml = item.text ? '<div class="card-text" id="ct-'+item.id+'">'+item.text+'</div><span class="expand-btn" onclick="toggleExpand(\''+(item.id)+'\')" id="eb-'+item.id+'">▼ Show more</span>' : '';
+    const imgHtml = item.image ? '<img src="'+item.image+'" class="card-img" onclick="window.open(this.src,\'_blank\')" title="Click to expand">' : '';
+    return `
+    <div class="card ${pClass}" id="card-${item.id}">
+      <div class="priority-dot dot-${pClass}"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-title">${item.title}</span>
+          <span class="pill ${pillClass}">${pillText}</span>
+          <span class="card-date">${dateHtml}</span>
+        </div>
+        ${fromHtml}
+        ${textHtml}
+        ${imgHtml}
+        <div class="card-actions">
+          ${!item.archived ? `
+            <button class="act-btn act-done" onclick="markDone('${item.id}')">${item.done?'↩ Undo':'✓ Done'}</button>
+            <button class="act-btn act-archive" onclick="archiveItem('${item.id}')">📦 Archive</button>
+          ` : `
+            <button class="act-btn act-done" onclick="restoreItem('${item.id}')">↩ Restore</button>
+          `}
+          <button class="act-btn act-edit" onclick="openEdit('${item.id}')">✏ Edit</button>
+          <button class="act-btn act-delete" onclick="deleteItem('${item.id}')">🗑 Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Hide "show more" for short texts
+  filtered.forEach(item => {
+    if (!item.text) return;
+    const ct = document.getElementById('ct-'+item.id);
+    const eb = document.getElementById('eb-'+item.id);
+    if (ct && eb) {
+      if (ct.scrollHeight <= ct.offsetHeight + 5) eb.style.display = 'none';
+    }
+  });
+}
+
+function toggleExpand(id) {
+  const ct = document.getElementById('ct-'+id);
+  const eb = document.getElementById('eb-'+id);
+  if (!ct) return;
+  if (ct.classList.contains('expanded')) {
+    ct.classList.remove('expanded');
+    eb.textContent = '▼ Show more';
+  } else {
+    ct.classList.add('expanded');
+    eb.textContent = '▲ Show less';
+  }
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+function markDone(id) {
+  const i = items.find(x => x.id === id);
+  if (i) { i.done = !i.done; saveData(); render(); }
+}
+function archiveItem(id) {
+  const i = items.find(x => x.id === id);
+  if (i) { i.archived = true; saveData(); render(); }
+}
+function restoreItem(id) {
+  const i = items.find(x => x.id === id);
+  if (i) { i.archived = false; saveData(); render(); }
+}
+function deleteItem(id) {
+  if (!confirm('Delete this reminder?')) return;
+  items = items.filter(x => x.id !== id);
+  saveData(); render();
+}
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+// ── Add/Edit Modal ────────────────────────────────────────────────────────────
+function openModal(prefill) {
+  editId = null;
+  document.getElementById('modalTitleText').textContent = 'New Reminder';
+  document.getElementById('fTitle').value = prefill?.title || '';
+  document.getElementById('fText').value = prefill?.text || '';
+  setDateVal(prefill?.date||'','fDay','fMonth','fYear');
+  setTimeVal(prefill?.time||'','fTime');
+  document.getElementById('fPriority').value = prefill?.priority || 'normal';
+  document.getElementById('fFrom').value = prefill?.from || '';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fTitle').focus(), 100);
+}
+function openEdit(id) {
+  const i = items.find(x => x.id === id);
+  if (!i) return;
+  editId = id;
+  document.getElementById('modalTitleText').textContent = 'Edit Reminder';
+  document.getElementById('fTitle').value = i.title;
+  document.getElementById('fText').value = i.text || '';
+  setDateVal(i.dueDate||'','fDay','fMonth','fYear');
+  setTimeVal(i.dueTime||'','fTime');
+  document.getElementById('fPriority').value = i.priority;
+  document.getElementById('fFrom').value = i.from || '';
+  if (i.image) {
+    document.getElementById('fImgPreview').src = i.image;
+    document.getElementById('fImgPreviewWrap').style.display = 'block';
+  } else {
+    document.getElementById('fImgPreviewWrap').style.display = 'none';
+  }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('fImgInput').value = '';
+  document.getElementById('fImgPreview').src = '';
+  document.getElementById('fImgPreviewWrap').style.display = 'none';
+  document.getElementById('fDay').value = '';
+  document.getElementById('fMonth').value = '';
+  document.getElementById('fYear').value = '';
+  document.getElementById('fTime').value = '';
+}
+function closeModalOut(e) { if (e.target.id === 'modalOverlay') closeModal(); }
+function saveItem() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { alert('Please enter a title.'); return; }
+  if (editId) {
+    const i = items.find(x => x.id === editId);
+    if (i) {
+      i.title = title;
+      i.text = document.getElementById('fText').value.trim();
+      i.dueDate = getDateVal('fDay','fMonth','fYear');
+      i.dueTime = getTimeVal('fTime');
+      i.priority = document.getElementById('fPriority').value;
+      i.from = document.getElementById('fFrom').value.trim();
+      const newImg = document.getElementById('fImgPreview').src;
+      if (newImg && newImg.startsWith('data:')) i.image = newImg;
+    }
+  } else {
+    items.unshift({
+      id: uid(), title,
+      text: document.getElementById('fText').value.trim(),
+      dueDate: getDateVal('fDay','fMonth','fYear'),
+      dueTime: getTimeVal('fTime'),
+      priority: document.getElementById('fPriority').value,
+      from: document.getElementById('fFrom').value.trim(),
+      image: null,
+      done: false, archived: false, addedAt: Date.now()
+    });
+    // handle image async
+    const imgInput = document.getElementById('fImgInput');
+    if (imgInput.files && imgInput.files[0]) {
+      getImgData('fImgInput').then(data => {
+        items[0].image = data;
+        saveData(); render();
+      });
+      imgInput.value = '';
+      document.getElementById('fImgPreview').style.display='none';
+      return;
+    }
+  }
+  saveData(); closeModal(); render();
+}
+
+// ── Paste Email Modal ─────────────────────────────────────────────────────────
+function openPaste() {
+  document.getElementById('pasteText').value = '';
+  document.getElementById('pasteTitle').value = '';
+  document.getElementById('pasteFrom').value = '';
+  document.getElementById('pastePriority').value = 'normal';
+  document.getElementById('pasteDay').value = '';
+  document.getElementById('pasteMonth').value = '';
+  document.getElementById('pasteYear').value = '';
+  document.getElementById('pasteOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('pasteText').focus(), 100);
+}
+function closePaste() { document.getElementById('pasteOverlay').classList.remove('open'); }
+function closePasteOut(e) { if (e.target.id === 'pasteOverlay') closePaste(); }
+
+// Auto-extract title & from when text is pasted
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('pasteText').addEventListener('input', function() {
+    const text = this.value;
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+    // Try to find subject line
+    const subjectLine = lines.find(l => /^subject:/i.test(l));
+    if (subjectLine) {
+      const title = subjectLine.replace(/^subject:\s*/i, '').trim();
+      if (!document.getElementById('pasteTitle').value) {
+        document.getElementById('pasteTitle').value = title;
+      }
+    } else if (lines.length > 0 && !document.getElementById('pasteTitle').value) {
+      // Use first non-empty line as title
+      document.getElementById('pasteTitle').value = lines[0].slice(0, 80);
+    }
+
+    // Try to find from line
+    // Handle "From:" on same line OR next line
+    let fromVal = '';
+    for (let idx = 0; idx < lines.length; idx++) {
+      if (/^from:/i.test(lines[idx])) {
+        const inline = lines[idx].replace(/^from:\s*/i, '').trim();
+        if (inline) {
+          fromVal = inline;
+        } else if (lines[idx+1]) {
+          fromVal = lines[idx+1].trim();
+        }
+        break;
+      }
+    }
+    // Extract name from "Name<email>" format
+    if (fromVal) {
+      const nameMatch = fromVal.match(/^([^<]+)</);
+      if (nameMatch) fromVal = nameMatch[1].trim();
+      fromVal = fromVal.replace(/[<>]/g, '').trim();
+    }
+    if (fromVal && !document.getElementById('pasteFrom').value) {
+      document.getElementById('pasteFrom').value = fromVal.slice(0, 60);
+    }
+    // Try to extract date from email header
+    const dateLine = lines.find(l => /^\d{4}-\d{2}-\d{2}/.test(l) || /^date:/i.test(l));
+    if (dateLine && !document.getElementById('pasteDate').value) {
+      const dateMatch = dateLine.match(/(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        setDateVal(dateMatch[1],'pasteDay','pasteMonth','pasteYear');
+      }
+    }
+  });
+});
+
+function savePaste() {
+  const title = document.getElementById('pasteTitle').value.trim() || document.getElementById('pasteText').value.trim().slice(0,60);
+  if (!title) { alert('Please paste some content first.'); return; }
+  items.unshift({
+    id: uid(), title,
+    text: document.getElementById('pasteText').value.trim(),
+    dueDate: getDateVal('pasteDay','pasteMonth','pasteYear'),
+    dueTime: getTimeVal('pasteTime'),
+    priority: document.getElementById('pastePriority').value,
+    from: document.getElementById('pasteFrom').value.trim(),
+    done: false, archived: false, addedAt: Date.now()
+  });
+  saveData(); closePaste(); render();
+}
+
+// ── Date helpers ─────────────────────────────────────────────────────────────
+const MONTHS = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function populateDayYear(dayId, yearId, timeId) {
+  const dayEl = document.getElementById(dayId);
+  const yearEl = document.getElementById(yearId);
+  if (!dayEl.options.length || dayEl.options.length === 1) {
+    for (let d = 1; d <= 31; d++) {
+      const o = document.createElement('option');
+      o.value = String(d).padStart(2,'0');
+      o.textContent = d;
+      dayEl.appendChild(o);
+    }
+  }
+  if (!yearEl.options.length || yearEl.options.length === 1) {
+    const curYear = new Date().getFullYear();
+    for (let y = curYear; y <= curYear + 3; y++) {
+      const o = document.createElement('option');
+      o.value = y;
+      o.textContent = y;
+      yearEl.appendChild(o);
+    }
+  }
+  if (timeId) {
+    const timeEl = document.getElementById(timeId);
+    if (!timeEl.options.length || timeEl.options.length === 1) {
+      for (let h = 7; h <= 22; h++) {
+        for (let m of ['00','30']) {
+          const val = String(h).padStart(2,'0') + ':' + m;
+          const o = document.createElement('option');
+          o.value = val; o.textContent = val;
+          timeEl.appendChild(o);
+        }
+      }
+    }
+  }
+}
+
+function getDateVal(dayId, monthId, yearId) {
+  const d = document.getElementById(dayId).value;
+  const m = document.getElementById(monthId).value;
+  const y = document.getElementById(yearId).value;
+  if (d && m && y) return y + '-' + m + '-' + d;
+  return '';
+}
+function getTimeVal(timeId) {
+  return document.getElementById(timeId)?.value || '';
+}
+function setTimeVal(timeStr, timeId) {
+  const el = document.getElementById(timeId);
+  if (el && timeStr) el.value = timeStr;
+}
+
+function setDateVal(dateStr, dayId, monthId, yearId) {
+  if (!dateStr) return;
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    document.getElementById(yearId).value = parts[0];
+    document.getElementById(monthId).value = parts[1];
+    document.getElementById(dayId).value = parts[2];
+  }
+}
+
+// ── Paste screenshot (Ctrl+V) ────────────────────────────────────────────────
+document.addEventListener('paste', function(e) {
+  // Only if modal is open
+  const modalOpen = document.getElementById('modalOverlay').classList.contains('open');
+  if (!modalOpen) return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const blob = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById('fImgPreview').src = ev.target.result;
+        document.getElementById('fImgPreviewWrap').style.display = 'block';
+      };
+      reader.readAsDataURL(blob);
+      break;
+    }
+  }
+});
+
+function removeImg() {
+  document.getElementById('fImgInput').value = '';
+  document.getElementById('fImgPreview').src = '';
+  document.getElementById('fImgPreviewWrap').style.display = 'none';
+}
+
+// ── Image helpers ─────────────────────────────────────────────────────────────
+function previewImg(input, previewId) {
+  const preview = document.getElementById(previewId);
+  const wrap = document.getElementById(previewId + 'Wrap');
+  const file = input.files[0];
+  if (!file) { if(wrap) wrap.style.display='none'; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    preview.src = e.target.result;
+    if(wrap) wrap.style.display='block'; else preview.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function getImgData(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input.files || !input.files[0]) return null;
+  return new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result);
+    reader.readAsDataURL(input.files[0]);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  populateDayYear('fDay','fYear','fTime');
+  populateDayYear('pasteDay','pasteYear','pasteTime');
+});
+loadData();
+</script>
+</body>
+</html>
